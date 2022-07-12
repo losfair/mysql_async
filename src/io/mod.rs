@@ -25,6 +25,7 @@ use tokio_util::codec::{Decoder, Encoder, Framed, FramedParts};
 #[cfg(unix)]
 use std::path::Path;
 use std::{
+    borrow::Cow,
     fmt,
     fs::File,
     future::Future,
@@ -201,11 +202,18 @@ impl Endpoint {
         }
 
         let mut builder = TlsConnector::builder();
-        if let Some(root_cert_path) = ssl_opts.root_cert_path() {
+
+        let root_cert_data = if let Some(data) = ssl_opts.root_cert_data() {
+            Some(Cow::Borrowed(data))
+        } else if let Some(root_cert_path) = ssl_opts.root_cert_path() {
             let mut root_cert_data = vec![];
             let mut root_cert_file = File::open(root_cert_path)?;
             root_cert_file.read_to_end(&mut root_cert_data)?;
-
+            Some(Cow::Owned(root_cert_data))
+        } else {
+            None
+        };
+        if let Some(root_cert_data) = root_cert_data {
             let root_certs = Certificate::from_der(&*root_cert_data)
                 .map(|x| vec![x])
                 .or_else(|_| {

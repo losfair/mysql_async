@@ -118,6 +118,7 @@ pub struct SslOpts {
     pkcs12_path: Option<Cow<'static, Path>>,
     password: Option<Cow<'static, str>>,
     root_cert_path: Option<Cow<'static, Path>>,
+    root_cert_data: Option<Cow<'static, [u8]>>,
     skip_domain_validation: bool,
     accept_invalid_certs: bool,
 }
@@ -146,6 +147,17 @@ impl SslOpts {
         self
     }
 
+    /// Sets path to a `pem` or `der` certificate of the root that connector will trust.
+    ///
+    /// Multiple certs are allowed in .pem files.
+    pub fn with_root_cert_data<T: Into<Cow<'static, [u8]>>>(
+        mut self,
+        root_cert_data: Option<T>,
+    ) -> Self {
+        self.root_cert_data = root_cert_data.map(Into::into);
+        self
+    }
+
     /// The way to not validate the server's domain
     /// name against its certificate (defaults to `false`).
     pub fn with_danger_skip_domain_validation(mut self, value: bool) -> Self {
@@ -170,6 +182,10 @@ impl SslOpts {
 
     pub fn root_cert_path(&self) -> Option<&Path> {
         self.root_cert_path.as_ref().map(AsRef::as_ref)
+    }
+
+    pub fn root_cert_data(&self) -> Option<&[u8]> {
+        self.root_cert_data.as_ref().map(AsRef::as_ref)
     }
 
     pub fn skip_domain_validation(&self) -> bool {
