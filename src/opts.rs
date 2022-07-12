@@ -1243,6 +1243,31 @@ fn mysqlopts_from_url(url: &Url) -> std::result::Result<MysqlOpts, UrlError> {
                     value,
                 });
             }
+        } else if key == "ssl" {
+            let mut ssl = opts.ssl_opts.clone().unwrap_or_else(|| Default::default());
+            if value != "1" && value != "true" && value != "on" {
+                for seg in value.split(",") {
+                    match seg {
+                        "accept_invalid_certs" => {
+                            ssl.accept_invalid_certs = true;
+                        }
+                        "skip_domain_validation" => {
+                            ssl.skip_domain_validation = true;
+                        }
+                        _ => {
+                            return Err(UrlError::InvalidParamValue {
+                                param: "ssl".into(),
+                                value: seg.into(),
+                            });
+                        }
+                    }
+                }
+            }
+            opts.ssl_opts = Some(ssl);
+        } else if key == "ssl_root_certificate" || key == "ssl_root_cert" {
+            let mut ssl = opts.ssl_opts.clone().unwrap_or_else(|| Default::default());
+            ssl.root_cert_path = Some(Cow::Owned(Path::new(value.as_str()).to_path_buf()));
+            opts.ssl_opts = Some(ssl);
         } else {
             return Err(UrlError::UnknownParameter { param: key });
         }
