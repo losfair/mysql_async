@@ -616,6 +616,15 @@ impl Opts {
         self.inner.mysql_opts.ssl_opts.as_ref()
     }
 
+    pub fn try_set_ssl_opts(&mut self, opts: SslOpts) -> std::result::Result<(), SslOpts> {
+        let inner = match Arc::get_mut(&mut self.inner) {
+            Some(x) => x,
+            None => return Err(opts),
+        };
+        inner.mysql_opts.ssl_opts = Some(opts);
+        Ok(())
+    }
+
     /// Prefer socket connection (defaults to `true` **temporary `false` on Windows platform**).
     ///
     /// Will reconnect via socket (or named pipe on Windows) after TCP connection to `127.0.0.1`
